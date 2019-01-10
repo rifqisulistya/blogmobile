@@ -1,5 +1,5 @@
 import React, {Component} from 'react';
-import {Alert, AppRegistry, Button, Dimensions, FlatList, Image, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View} from 'react-native';
+import {Alert, AppRegistry, Button, Dimensions, FlatList, Image, Platform, StyleSheet, Text, TextInput, TouchableHighlight, TouchableOpacity, View} from 'react-native';
 import LinkPreview from 'react-native-link-preview';
 import axios from 'react-native-axios';
 
@@ -9,7 +9,8 @@ export default class App extends Component<Props> {
     this.state = {
       text: '',
       posts: [],
-      title : "sample title"
+      title : "sample title",
+      editMode: null
     };
   }
 
@@ -126,7 +127,106 @@ export default class App extends Component<Props> {
     }  
   }
 
-   componentDidMount () {
+  handleLongPress = (item) => {
+    this.setState(
+      {
+        text: item.post,
+        editMode: item.id
+      }
+    )
+    alert(this.state.text)
+  }
+
+  handleEdit = (id) => {
+    var regex = /(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])?/;
+    if (this.state.text == ""){
+      alert('require input')
+    }
+    else if (this.state.text.match(regex)) {
+      console.log('masuk ke else if')
+      LinkPreview.getPreview(this.state.text)
+      .then(data => {
+        console.log('masuk ke then')
+        axios.put('http://192.168.1.17:8081/mysql/'+id, 
+          {
+            title:data.title, 
+            img:data.images[0],
+            dsc:data.description,
+            post:this.state.text
+          }
+        )
+        .then((response) => {
+          alert(response.data)
+          console.log(response);
+          var newPost = this.state.posts
+          for (var i=0; i<newPost.length; i++) {
+            if (newPost[i].id == id) {
+              newPost[i] = {
+                title:data.title, 
+                img:data.images[0],
+                dsc:data.description,
+                post:this.state.text,
+                id: id
+              }  
+            break
+            }
+          }
+          this.setState(
+            {
+              posts : newPost,
+              text: '',
+              editMode: null
+            }  
+          )
+        })
+        .catch((error) => {
+          alert(error.message)
+          console.log(error);
+        });
+      });
+    }
+    else {
+      axios.put('http://192.168.1.17:8081/mysql/'+id, 
+          {
+            title:'', 
+            img:'',
+            dsc:'',
+            post:this.state.text
+          }
+        )
+        .then((response) => {
+          alert(response.data)
+          console.log(response);
+          var newPost = this.state.posts
+          for (var i=0; i<newPost.length; i++) {
+            if (newPost[i].id == id) {
+              newPost[i] = {
+                title:'', 
+                img:'',
+                dsc:'',
+                post:this.state.text,
+                id: id
+              }  
+            break
+            }
+          }
+          this.setState(
+            {
+              posts : newPost,
+              text: '',
+              editMode: null
+            }  
+          )
+        })
+        .catch((error) => {
+          alert(error.message)
+          console.log(error);
+        });
+    }
+
+  } 
+
+  componentDidMount () {
     axios.get("http://192.168.1.17:8081/mysql")
       .then (response => {
         this.setState({
@@ -138,25 +238,40 @@ export default class App extends Component<Props> {
       }); 
   }
 
-  renderItem = ({ item, index }) => {
-    if (item.empty === true) {
-      return <View style={[styles.item, styles.itemInvisible]} />;
-    }
+  renderItem = (obj) => {
     return (
-      <View
+      <TouchableOpacity
         style={styles.item}
+        onLongPress = {() => this.handleLongPress(obj.item)}
       >
-        <Text style={styles.itemText}>{item.post}</Text>
-        <Text style={styles.itemText}>{item.title}</Text>
-        <Image source={{uri:item.img}} style={{width:100, height:100}}/>
-        <Text>{item.dsc}</Text>
+        <Text style={styles.itemText}>{obj.item.post}</Text>
+        <Text style={styles.itemText}>{obj.item.title}</Text>
+        <Image source={{uri:obj.item.img}} style={{width:100, height:100}}/>
+        <Text>{obj.item.dsc}</Text>
         <Button
-          onPress={() => this.handleHapus(item.id)}
+          onPress={() => this.handleHapus(obj.item.id)}
           title="x"
         />
-      </View>
+      </TouchableOpacity>
     );
   };
+
+  renderButton = () => {
+    if (this.state.editMode) {
+      return (
+        <Button
+          onPress={() => this.handleEdit(this.state.editMode)}
+          title="Edit it!"
+        />
+      )  
+    }
+    return (
+        <Button
+          onPress={this.handlePress}
+          title="Post it!"
+        />
+      )
+  }
 
   render() {
     return (
@@ -168,13 +283,10 @@ export default class App extends Component<Props> {
           onChangeText={this.handleChange}
           value={this.state.text}
         />
-        <Button
-          onPress={this.handlePress}
-          title="Post it!"
-        />
+        {this.renderButton()}
         <FlatList
           data={this.state.posts}
-          renderItem={this.renderItem}
+          renderItem={(dasda) => this.renderItem(dasda)}
           keyExtractor = {(item,index) => item.id.toString()}
         />            
       </View>
