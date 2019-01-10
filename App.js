@@ -21,7 +21,7 @@ export default class App extends Component<Props> {
     var posts = this.state.posts
     var newPost = []
     for (i=0; i<posts.length; i++){
-      if (key != i){
+      if (key != posts[i].id){
         newPost.push(posts[i])
       }
     }
@@ -30,7 +30,7 @@ export default class App extends Component<Props> {
         posts : newPost
       }    
     )
-    console.log(key)
+    console.log('key:', key)
     axios.delete('http://192.168.1.17:8081/mysql/'+key)
     .then(function (response) {
       alert(response.data)
@@ -49,45 +49,80 @@ export default class App extends Component<Props> {
       alert('require input')
     }
     else if (this.state.text.match(regex)) {
+      console.log('masuk ke else if')
       LinkPreview.getPreview(this.state.text)
       .then(data => {
-        this.setState(
-          {
-            posts:
-            [
-              {
-                //text:this.state.text,
-                title:data.title, 
-                img:data.images[0],
-                dsc:data.description,
-                post:this.state.text
-              },
-              ...this.state.posts
-            ],
-            text:''
-          }
-        );
+        console.log('masuk ke then')
         axios.post('http://192.168.1.17:8081/mysql', 
-          {test:'aa'}
+          {
+            title:data.title, 
+            img:data.images[0],
+            dsc:data.description,
+            post:this.state.text
+          }
         )
-        .then(function (response) {
+        .then((response) => {
           alert(response.data)
           console.log(response);
+          this.setState(
+            {
+              posts:
+              [
+                {
+                  title:data.title, 
+                  img:data.images[0],
+                  dsc:data.description,
+                  post:this.state.text,
+                  id:response.data.id
+                },
+                ...this.state.posts
+              ],
+              text:''
+            }
+          );
 
         })
-        .catch(function (error) {
+        .catch((error) => {
           alert(error.message)
           console.log(error);
         });
       });
     }
     else {
-      this.setState(
+      console.log('masuk ke else')
+      axios.post('http://192.168.1.17:8081/mysql', 
         {
-          posts:[{text:this.state.text},...this.state.posts],
-          text:''
+          title:'', 
+          img:'',
+          dsc:'',
+          post:this.state.text
         }
       )
+      .then((response) => {
+        alert(response.data)
+        console.log(response);
+        this.setState(
+          {
+            posts:
+            [
+              {
+                title:'', 
+                img:'',
+                dsc:'',
+                post:this.state.text,
+                id:response.data.id
+              },
+              ...this.state.posts
+            ],
+            text:''
+          }
+        );
+
+      })
+      .catch((error) => {
+        alert(error.message)
+        console.log(error);
+      });
     }  
   }
 
@@ -104,7 +139,6 @@ export default class App extends Component<Props> {
   }
 
   renderItem = ({ item, index }) => {
-    console.log(item)
     if (item.empty === true) {
       return <View style={[styles.item, styles.itemInvisible]} />;
     }
@@ -112,12 +146,12 @@ export default class App extends Component<Props> {
       <View
         style={styles.item}
       >
-        <Text style={styles.itemText}>{item.text}</Text>
+        <Text style={styles.itemText}>{item.post}</Text>
         <Text style={styles.itemText}>{item.title}</Text>
         <Image source={{uri:item.img}} style={{width:100, height:100}}/>
         <Text>{item.dsc}</Text>
         <Button
-          onPress={() => this.handleHapus(index)}
+          onPress={() => this.handleHapus(item.id)}
           title="x"
         />
       </View>
@@ -177,11 +211,3 @@ const styles = StyleSheet.create({
   },
 });
 
-
-//pake if buat regex buat detect url
-//nulis tentang mongodb
-//ganti db nya jadi mongodb:
-//pake mysql bisa create & read. RN <-> Express <-> Mysql
-//key extractor buat delete. pake iterasi.
-
-//bulan ini crud
