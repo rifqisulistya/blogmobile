@@ -238,6 +238,14 @@ export default class App extends Component<Props> {
       }); 
   }
 
+  renderImage = (param) => {
+    if (param) {
+      return (
+        <Image source={{uri:param}} style={{width:100, height:100}}/>
+      )
+    }
+  }
+
   renderItem = (obj) => {
     return (
       <TouchableOpacity
@@ -246,8 +254,7 @@ export default class App extends Component<Props> {
       >
         <Text style={styles.itemText}>{obj.item.post}</Text>
         <Text style={styles.itemText}>{obj.item.title}</Text>
-        <Image source={{uri:obj.item.img}} style={{width:100, height:100}}/>
-        <Text>{obj.item.dsc}</Text>
+        {this.renderImage(obj.item.img)}
         <Button
           onPress={() => this.handleHapus(obj.item.id)}
           title="x"
@@ -312,7 +319,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flex: 1,
     margin: 1,
-    height:200,
+    height:300,
     width: 350, 
   },
   itemInvisible: {
