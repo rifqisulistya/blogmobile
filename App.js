@@ -22,7 +22,7 @@ export default class App extends Component<Props> {
     var posts = this.state.posts
     var newPost = []
     for (i=0; i<posts.length; i++){
-      if (key != posts[i].id){
+      if (key != posts[i]._id){
         newPost.push(posts[i])
       }
     }
@@ -32,7 +32,7 @@ export default class App extends Component<Props> {
       }    
     )
     console.log('key:', key)
-    axios.delete('http://192.168.1.17:8081/mysql/'+key)
+    axios.delete('http://192.168.1.14:8081/mongodb/'+key)
     .then(function (response) {
       alert(response.data)
       console.log(response);
@@ -54,7 +54,7 @@ export default class App extends Component<Props> {
       LinkPreview.getPreview(this.state.text)
       .then(data => {
         console.log('masuk ke then')
-        axios.post('http://192.168.1.17:8081/mysql', 
+        axios.post('http://192.168.1.14:8081/mongodb', 
           {
             title:data.title, 
             img:data.images[0],
@@ -74,7 +74,7 @@ export default class App extends Component<Props> {
                   img:data.images[0],
                   dsc:data.description,
                   post:this.state.text,
-                  id:response.data.id
+                  _id:response.data._id
                 },
                 ...this.state.posts
               ],
@@ -91,7 +91,7 @@ export default class App extends Component<Props> {
     }
     else {
       console.log('masuk ke else')
-      axios.post('http://192.168.1.17:8081/mysql', 
+      axios.post('http://192.168.1.14:8081/mongodb', 
         {
           title:'', 
           img:'',
@@ -100,8 +100,7 @@ export default class App extends Component<Props> {
         }
       )
       .then((response) => {
-        alert(response.data)
-        console.log(response);
+        console.log('dataid: ',response.data._id);
         this.setState(
           {
             posts:
@@ -111,7 +110,7 @@ export default class App extends Component<Props> {
                 img:'',
                 dsc:'',
                 post:this.state.text,
-                id:response.data.id
+                _id:response.data._id
               },
               ...this.state.posts
             ],
@@ -131,13 +130,13 @@ export default class App extends Component<Props> {
     this.setState(
       {
         text: item.post,
-        editMode: item.id
+        editMode: item._id
       }
     )
     alert(this.state.text)
   }
 
-  handleEdit = (id) => {
+  handleEdit = (_id) => {
     var regex = /(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-]*[\w@?^=%&\/~+#-])?/;
     if (this.state.text == ""){
       alert('require input')
@@ -147,7 +146,7 @@ export default class App extends Component<Props> {
       LinkPreview.getPreview(this.state.text)
       .then(data => {
         console.log('masuk ke then')
-        axios.put('http://192.168.1.17:8081/mysql/'+id, 
+        axios.put('http://192.168.1.14:8081/mongodb/'+_id, 
           {
             title:data.title, 
             img:data.images[0],
@@ -160,13 +159,13 @@ export default class App extends Component<Props> {
           console.log(response);
           var newPost = this.state.posts
           for (var i=0; i<newPost.length; i++) {
-            if (newPost[i].id == id) {
+            if (newPost[i]._id == _id) {
               newPost[i] = {
                 title:data.title, 
                 img:data.images[0],
                 dsc:data.description,
                 post:this.state.text,
-                id: id
+                _id: _id
               }  
             break
             }
@@ -186,7 +185,7 @@ export default class App extends Component<Props> {
       });
     }
     else {
-      axios.put('http://192.168.1.17:8081/mysql/'+id, 
+      axios.put('http://192.168.1.14:8081/mongodb/'+_id, 
           {
             title:'', 
             img:'',
@@ -199,13 +198,13 @@ export default class App extends Component<Props> {
           console.log(response);
           var newPost = this.state.posts
           for (var i=0; i<newPost.length; i++) {
-            if (newPost[i].id == id) {
+            if (newPost[i]._id == _id) {
               newPost[i] = {
                 title:'', 
                 img:'',
                 dsc:'',
                 post:this.state.text,
-                id: id
+                _id: _id
               }  
             break
             }
@@ -227,7 +226,7 @@ export default class App extends Component<Props> {
   } 
 
   componentDidMount () {
-    axios.get("http://192.168.1.17:8081/mysql")
+    axios.get("http://192.168.1.14:8081/mongodb")
       .then (response => {
         this.setState({
           posts: response.data
@@ -247,16 +246,17 @@ export default class App extends Component<Props> {
   }
 
   renderItem = (obj) => {
+    console.log(obj)
     return (
       <TouchableOpacity
         style={styles.item}
         onLongPress = {() => this.handleLongPress(obj.item)}
-      >
+      > 
         <Text style={styles.itemText}>{obj.item.post}</Text>
         <Text style={styles.itemText}>{obj.item.title}</Text>
         {this.renderImage(obj.item.img)}
         <Button
-          onPress={() => this.handleHapus(obj.item.id)}
+          onPress={() => this.handleHapus(obj.item._id)}
           title="x"
         />
       </TouchableOpacity>
@@ -294,8 +294,8 @@ export default class App extends Component<Props> {
         <FlatList
           data={this.state.posts}
           renderItem={(dasda) => this.renderItem(dasda)}
-          keyExtractor = {(item,index) => item.id.toString()}
-        />            
+          keyExtractor = {(item,index) => item._id.toString()}
+        />           
       </View>
     );
   }
